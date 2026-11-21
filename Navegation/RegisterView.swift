@@ -30,21 +30,21 @@ struct RegisterView: View {
             // Campos con scroll
             ScrollView {
                 VStack(spacing: 16) {
-                    // Nombres
+                    // Nombres de usuario
                     fieldRow(icon: "person.fill") {
                         TextField("Nombre de usuario", text: $userName)
                             .textFieldStyle(.plain)
-                            .textContentType(.givenName)
+                            .textContentType(.username)
                             #if os(iOS)
                             .textInputAutocapitalization(.words)
                             #endif
                     }
 
-                    // Apellidos
+                    //Full name
                     fieldRow(icon: "person.2.fill") {
                         TextField("Nombre completo", text: $fullName)
                             .textFieldStyle(.plain)
-                            .textContentType(.familyName)
+                            .textContentType(.name)
                             #if os(iOS)
                             .textInputAutocapitalization(.words)
                             #endif
@@ -106,7 +106,7 @@ struct RegisterView: View {
             } label: {
                 Group {
                     if auth.isLoading {
-                        ProgressView().tint(.white)
+                        ProgressView().tint(.black)
                     } else {
                         Text("Registrarme")
                     }

@@ -44,8 +44,8 @@ class AuthManager{
                     .collection("users")
                     .document(uid)
                     .setData([
-                        "userName": userName,
-                        "fullName": fullName,
+                        "userName": userName.trimmingCharacters(in: .whitespaces).lowercased(),
+                        "fullName": fullName.trimmingCharacters(in: .whitespaces),
                         "email": email,
                         "phone": phone,
                         "belt": belt,

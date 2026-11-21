@@ -78,7 +78,7 @@ struct LoginView: View {
                     } label: {
                         Group {
                             if auth.isLoading {
-                                ProgressView().tint(.white)
+                                ProgressView().tint(.black)
                             } else {
                                 Text("Iniciar sesión")
                             }
