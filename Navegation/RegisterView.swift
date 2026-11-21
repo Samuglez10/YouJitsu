@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct RegisterView: View {
-    @State private var firstName = ""
-    @State private var lastName = ""
+    @State private var userName = ""
+    @State private var fullName = ""
     @State private var email = ""
     @State private var phone = ""
     @State private var password = ""
@@ -32,7 +32,7 @@ struct RegisterView: View {
                 VStack(spacing: 16) {
                     // Nombres
                     fieldRow(icon: "person.fill") {
-                        TextField("Nombre(s)", text: $firstName)
+                        TextField("Nombre de usuario", text: $userName)
                             .textFieldStyle(.plain)
                             .textContentType(.givenName)
                             #if os(iOS)
@@ -42,7 +42,7 @@ struct RegisterView: View {
 
                     // Apellidos
                     fieldRow(icon: "person.2.fill") {
-                        TextField("Apellidos", text: $lastName)
+                        TextField("Nombre completo", text: $fullName)
                             .textFieldStyle(.plain)
                             .textContentType(.familyName)
                             #if os(iOS)
@@ -94,8 +94,8 @@ struct RegisterView: View {
             Button {
                 Task {
                     await auth.signUp(
-                        firstName: firstName,
-                        lastName: lastName,
+                        userName: userName,
+                        fullName: fullName,
                         email: email,
                         phone: phone,
                         password: password,

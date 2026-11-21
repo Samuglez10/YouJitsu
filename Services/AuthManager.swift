@@ -29,7 +29,7 @@ class AuthManager{
         }
     }
 
-    func signUp(firstName: String, lastName: String, email: String,
+    func signUp(userName: String, fullName: String, email: String,
                     phone: String, password: String,
                     belt: String, degrees: Int) async {
             isLoading = true
@@ -44,22 +44,22 @@ class AuthManager{
                     .collection("users")
                     .document(uid)
                     .setData([
-                        "firstName": firstName,
-                        "lastName": lastName,
+                        "userName": userName,
+                        "fullName": fullName,
                         "email": email,
                         "phone": phone,
                         "belt": belt,
                         "degrees": degrees,
                         "createdAt": FieldValue.serverTimestamp()
                     ])
-                print("✅ Usuario guardado con UID:", uid)
+                print("Usuario guardado con UID:", uid)
                 // Firebase abre sesión al crear la cuenta; la cerramos para mandarlo al login
                 try Auth.auth().signOut()
                 isLoggedIn = false
                 didRegister = true
                 errorMessage = nil
             } catch {
-                print("❌ Error al registrar:", error)
+                print("Error al registrar:", error)
                 errorMessage = error.localizedDescription
             }
         }
