@@ -1,6 +1,6 @@
 import SwiftUI
 import Observation
-import FirebaseAuth
+import Supabase
 
 @MainActor
 @Observable
@@ -10,7 +10,7 @@ final class ProfileViewModel {
     var isSaving = false
     var errorMessage: String?
 
-    private var uid: String? { Auth.auth().currentUser?.uid }
+    private var uid: UUID? { supabase.auth.currentUser?.id }
 
     func load() async {
         guard let uid else { return }

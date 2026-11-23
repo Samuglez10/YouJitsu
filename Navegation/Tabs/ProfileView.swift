@@ -4,6 +4,8 @@ struct ProfileView: View {
     @Environment(AuthManager.self) private var auth
     @State private var viewModel = ProfileViewModel()
     @State private var showEdit = false
+    @State private var showNewPost = false
+    @State private var postCount = 0
 
     var body: some View {
         NavigationStack {
@@ -24,12 +26,26 @@ struct ProfileView: View {
                     Button("Editar") { showEdit = true }
                         .disabled(viewModel.profile == nil)
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { showNewPost = true } label: { Image(systemName: "plus") }
+                        .disabled(viewModel.profile == nil)
+                }
             }
             .sheet(isPresented: $showEdit) {
                 if let profile = viewModel.profile {
                     EditProfileView(profile: profile, viewModel: viewModel)
                 }
             }
+            .sheet(isPresented: $showNewPost, onDismiss: {
+                Task {
+                    if let id = viewModel.profile?.id {
+                        postCount = (try? await PostService.shared.countPosts(of: id)) ?? postCount
+                    }
+                }
+            }) {
+                CreatePostView()
+            }
+            
             .alert("Error", isPresented: Binding(
                 get: { viewModel.errorMessage != nil },
                 set: { if !$0 { viewModel.errorMessage = nil } }
@@ -39,7 +55,12 @@ struct ProfileView: View {
                 Text(viewModel.errorMessage ?? "")
             }
         }
-        .task { await viewModel.load() }
+        .task {
+            await viewModel.load()
+            if let id = viewModel.profile?.id {
+                postCount = (try? await PostService.shared.countPosts(of: id)) ?? 0
+            }
+        }
     }
 
     @ViewBuilder
@@ -71,7 +92,7 @@ struct ProfileView: View {
 
                 // Se conectan cuando existan posts y amigos.
                 HStack {
-                    stat("Posts", value: 0)
+                    stat("Posts", value: postCount)
                     Divider().frame(height: 32)
                     stat("Amigos", value: 0)
                 }

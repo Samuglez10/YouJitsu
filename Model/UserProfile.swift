@@ -1,26 +1,27 @@
 import Foundation
-import FirebaseFirestore
 
-/// Coincide con lo que AuthManager.signUp ya guarda en users/{uid}.
-/// Los campos nuevos son opcionales para que los usuarios existentes sigan cargando.
 struct UserProfile: Codable, Identifiable {
-    @DocumentID var id: String?
+    let id: UUID
     var userName: String
     var fullName: String
-    var email: String
-    var phone: String?
     var belt: String
     var degrees: Int
-    var createdAt: Date?
-
-    // Nuevos (se llenan desde "Editar perfil")
     var bio: String?
     var discipline: String?
     var photoURL: String?
-    var academyId: String?
+    var academyId: UUID?
+    var createdAt: Date?
 
+    // Swift usa camelCase, la base de datos snake_case
+    enum CodingKeys: String, CodingKey {
+        case id, belt, degrees, bio, discipline
+        case userName  = "user_name"
+        case fullName  = "full_name"
+        case photoURL  = "photo_url"
+        case academyId = "academy_id"
+        case createdAt = "created_at"
+    }
 
-    /// La cinta guardada como texto, convertida a tu enum BeltRank.
     var beltRank: BeltRank {
         BeltRank(rawValue: belt) ?? .blanca
     }

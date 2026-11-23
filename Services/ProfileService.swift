@@ -1,39 +1,57 @@
 import Foundation
-import FirebaseFirestore
-import FirebaseStorage
+import Supabase
 
 final class ProfileService {
     static let shared = ProfileService()
     private init() {}
 
-    private let db = Firestore.firestore()
-    private let storage = Storage.storage()
-
-    func fetchProfile(uid: String) async throws -> UserProfile? {
-        let snapshot = try await db.collection("users").document(uid).getDocument()
-        guard snapshot.exists else { return nil }
-        return try snapshot.data(as: UserProfile.self)
+    func fetchProfile(uid: UUID) async throws -> UserProfile? {
+        let rows: [UserProfile] = try await supabase
+            .from("profiles")
+            .select()
+            .eq("id", value: uid)
+            .execute()
+            .value
+        return rows.first
     }
 
-    /// Actualiza solo los campos editables (no toca email, phone ni createdAt).
-    func updateProfile(_ p: UserProfile, uid: String) async throws {
-        var data: [String: Any] = [
-            "userName": p.userName,
-            "fullName": p.fullName,
-            "belt": p.belt,
-            "degrees": p.degrees
-        ]
-        if let v = p.bio { data["bio"] = v }
-        if let v = p.discipline { data["discipline"] = v }
-        if let v = p.photoURL { data["photoURL"] = v }
-        try await db.collection("users").document(uid).setData(data, merge: true)
+    /// Solo los campos editables
+    private struct ProfileUpdate: Encodable {
+        let user_name: String
+        let full_name: String
+        let belt: String
+        let degrees: Int
+        let bio: String?
+        let discipline: String?
+        let photo_url: String?
     }
 
-    func uploadPhoto(_ data: Data, uid: String) async throws -> String {
-        let ref = storage.reference().child("profile_photos/\(uid).jpg")
-        let metadata = StorageMetadata()
-        metadata.contentType = "image/jpeg"
-        _ = try await ref.putDataAsync(data, metadata: metadata)
-        return try await ref.downloadURL().absoluteString
+    func updateProfile(_ p: UserProfile, uid: UUID) async throws {
+        let update = ProfileUpdate(
+            user_name: p.userName,
+            full_name: p.fullName,
+            belt: p.belt,
+            degrees: p.degrees,
+            bio: p.bio,
+            discipline: p.discipline,
+            photo_url: p.photoURL
+        )
+        try await supabase
+            .from("profiles")
+            .update(update)
+            .eq("id", value: uid)
+            .execute()
+    }
+
+    func uploadPhoto(_ data: Data, uid: UUID) async throws -> String {
+        // La carpeta debe ser el uid en minúsculas para pasar la política de Storage
+        let path = "\(uid.uuidString.lowercased())/avatar.jpg"
+        try await supabase.storage
+            .from("avatars")
+            .upload(path, data: data,
+                    options: FileOptions(contentType: "image/jpeg", upsert: true))
+        let url = try supabase.storage.from("avatars").getPublicURL(path: path)
+        // ?v= evita que AsyncImage muestre la foto vieja guardada en caché
+        return url.absoluteString + "?v=\(Int(Date().timeIntervalSince1970))"
     }
 }

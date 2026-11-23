@@ -1,71 +1,67 @@
 import SwiftUI
 import Observation
-import FirebaseAuth
-import FirebaseFirestore
+import Supabase
 
 @MainActor
 @Observable
-class AuthManager{
+class AuthManager {
     var isLoggedIn = false
     var isLoading = false
     var errorMessage: String?
     var didRegister = false
-    
-    init(){
-        // Si habia una sesion se mantiene
-        isLoggedIn = Auth.auth().currentUser != nil
+
+    init() {
+        // Escucha la sesión: al abrir la app, al entrar, al salir y si expira
+        Task {
+            for await (_, session) in supabase.auth.authStateChanges {
+                isLoggedIn = session != nil
+            }
+        }
     }
-    
-    func signIn(email: String, password: String) async{
+
+    func signIn(email: String, password: String) async {
         isLoading = true
-        defer { isLoading = false}
+        defer { isLoading = false }
         didRegister = false
         do {
-            try await Auth.auth().signIn(withEmail: email,password: password)
-            isLoggedIn = true
+            try await supabase.auth.signIn(email: email, password: password)
             errorMessage = nil
-        } catch{
+        } catch {
             errorMessage = error.localizedDescription
         }
     }
 
     func signUp(userName: String, fullName: String, email: String,
-                    phone: String, password: String,
-                    belt: String, degrees: Int) async {
-            isLoading = true
-            defer { isLoading = false }
-            do {
-                // 1. Crear la cuenta en Authentication
-                let result = try await Auth.auth().createUser(withEmail: email, password: password)
-                let uid = result.user.uid
-
-                // 2. Guardar los datos del atleta en Firestore
-                try await Firestore.firestore()
-                    .collection("users")
-                    .document(uid)
-                    .setData([
-                        "userName": userName.trimmingCharacters(in: .whitespaces).lowercased(),
-                        "fullName": fullName.trimmingCharacters(in: .whitespaces),
-                        "email": email,
-                        "phone": phone,
-                        "belt": belt,
-                        "degrees": degrees,
-                        "createdAt": FieldValue.serverTimestamp()
-                    ])
-                print("Usuario guardado con UID:", uid)
-                // Firebase abre sesión al crear la cuenta; la cerramos para mandarlo al login
-                try Auth.auth().signOut()
-                isLoggedIn = false
-                didRegister = true
-                errorMessage = nil
-            } catch {
-                print("Error al registrar:", error)
-                errorMessage = error.localizedDescription
+                phone: String, password: String,
+                belt: String, degrees: Int) async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            // El trigger de SQL crea la fila en "profiles" con estos datos
+            let response = try await supabase.auth.signUp(
+                email: email,
+                password: password,
+                data: [
+                    "user_name": .string(userName),
+                    "full_name": .string(fullName),
+                    "phone": .string(phone),
+                    "belt": .string(belt),
+                    "degrees": .integer(degrees)
+                ]
+            )
+            // Si la confirmación de correo está apagada, Supabase abre sesión;
+            // la cerramos para mandarlo al login como antes
+            if response.session != nil {
+                try await supabase.auth.signOut()
             }
+            didRegister = true
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
         }
-    
+    }
+
     func signOut() {
-        try? Auth.auth().signOut()
-        isLoggedIn = false
+        Task { try? await supabase.auth.signOut() }
     }
 }
