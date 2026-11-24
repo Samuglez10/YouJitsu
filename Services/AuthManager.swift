@@ -11,10 +11,13 @@ class AuthManager {
     var didRegister = false
 
     init() {
-        // Escucha la sesión: al abrir la app, al entrar, al salir y si expira
         Task {
             for await (_, session) in supabase.auth.authStateChanges {
-                isLoggedIn = session != nil
+                if let session, !session.isExpired {
+                    isLoggedIn = true
+                } else {
+                    isLoggedIn = false
+                }
             }
         }
     }

@@ -10,6 +10,30 @@ struct RegisterView: View {
     @State private var degrees = 0
     @Environment(AuthManager.self) private var auth
     @Environment(\.dismiss) private var dismiss
+    
+    /// nil = todo bien. Si hay texto, es el error a mostrar.
+    private var validationError: String? {
+        let user = userName.trimmingCharacters(in: .whitespaces)
+        let name = fullName.trimmingCharacters(in: .whitespaces)
+        let mail = email.trimmingCharacters(in: .whitespaces)
+
+        if user.isEmpty || name.isEmpty || mail.isEmpty || password.isEmpty {
+            return "Completa todos los campos"
+        }
+        if user.count < 3 || user.count > 20 {
+            return "El usuario debe tener entre 3 y 20 caracteres"
+        }
+        if user.range(of: "^[A-Za-z0-9._]+$", options: .regularExpression) == nil {
+            return "El usuario solo puede tener letras, números, punto y guion bajo"
+        }
+        if !mail.contains("@") || !mail.contains(".") {
+            return "Escribe un correo válido"
+        }
+        if password.count < 6 {
+            return "La contraseña debe tener al menos 6 caracteres"
+        }
+        return nil
+    }
 
     var body: some View {
         // La tarjeta tiene tamaño fijo; solo el formulario scrollea dentro
@@ -36,7 +60,7 @@ struct RegisterView: View {
                             .textFieldStyle(.plain)
                             .textContentType(.username)
                             #if os(iOS)
-                            .textInputAutocapitalization(.words)
+                            .textInputAutocapitalization(.never)
                             #endif
                     }
 
@@ -46,7 +70,7 @@ struct RegisterView: View {
                             .textFieldStyle(.plain)
                             .textContentType(.name)
                             #if os(iOS)
-                            .textInputAutocapitalization(.words)
+                            .textInputAutocapitalization(.never)
                             #endif
                     }
 
@@ -92,12 +116,16 @@ struct RegisterView: View {
                     .multilineTextAlignment(.center)
             }
             Button {
+                if let validationError {
+                        auth.errorMessage = validationError
+                        return
+                }
                 Task {
                     await auth.signUp(
-                        userName: userName,
-                        fullName: fullName,
-                        email: email,
-                        phone: phone,
+                        userName: userName.trimmingCharacters(in: .whitespaces),
+                        fullName: fullName.trimmingCharacters(in: .whitespaces),
+                        email: email.trimmingCharacters(in: .whitespaces),
+                        phone: phone.trimmingCharacters(in: .whitespaces),
                         password: password,
                         belt: belt.rawValue,
                         degrees: degrees
@@ -129,6 +157,7 @@ struct RegisterView: View {
                 .blur(radius: 10, opaque: true)
                 .ignoresSafeArea()
         }
+        .environment(\.colorScheme, .light)
         .onChange(of: auth.didRegister) { _, registered in
             if registered { dismiss() }
         }

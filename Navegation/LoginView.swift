@@ -101,6 +101,7 @@ struct LoginView: View {
             }
             .padding(.horizontal, 24)
         }
+        .environment(\.colorScheme, .light)
         .onAppear { auth.errorMessage = nil }
     }
 }

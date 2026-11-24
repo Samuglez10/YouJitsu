@@ -3,5 +3,8 @@ import Supabase
 
 let supabase = SupabaseClient(
     supabaseURL: URL(string: "https://yqicafsauhaumkrgblzw.supabase.co")!,
-    supabaseKey: "sb_publishable_vFtQbuIGVXgSWlmOUDuN_g_-WovHJDQ"
+    supabaseKey: "sb_publishable_vFtQbuIGVXgSWlmOUDuN_g_-WovHJDQ",
+    options: SupabaseClientOptions(
+        auth: .init(emitLocalSessionAsInitialSession: true)
+    )
 )
