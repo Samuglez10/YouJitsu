@@ -70,7 +70,7 @@ struct RegisterView: View {
                             .textFieldStyle(.plain)
                             .textContentType(.name)
                             #if os(iOS)
-                            .textInputAutocapitalization(.never)
+                            .textInputAutocapitalization(.words)
                             #endif
                     }
 
@@ -140,6 +140,7 @@ struct RegisterView: View {
                     }
                 }
             }
+            .disabled(auth.isLoading) 
         }
         .padding(24)
         .frame(maxWidth: .infinity)
