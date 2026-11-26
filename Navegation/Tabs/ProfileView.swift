@@ -5,7 +5,6 @@ struct ProfileView: View {
     @State private var viewModel = ProfileViewModel()
     @State private var showEdit = false
     @State private var showNewPost = false
-    @State private var postCount = 0
 
     var body: some View {
         NavigationStack {
@@ -37,15 +36,10 @@ struct ProfileView: View {
                 }
             }
             .sheet(isPresented: $showNewPost, onDismiss: {
-                Task {
-                    if let id = viewModel.profile?.id {
-                        postCount = (try? await PostService.shared.countPosts(of: id)) ?? postCount
-                    }
-                }
+                Task { await viewModel.loadPosts() }
             }) {
                 CreatePostView()
             }
-            
             .alert("Error", isPresented: Binding(
                 get: { viewModel.errorMessage != nil },
                 set: { if !$0 { viewModel.errorMessage = nil } }
@@ -57,9 +51,7 @@ struct ProfileView: View {
         }
         .task {
             await viewModel.load()
-            if let id = viewModel.profile?.id {
-                postCount = (try? await PostService.shared.countPosts(of: id)) ?? 0
-            }
+            await viewModel.loadPosts()
         }
     }
 
@@ -77,7 +69,7 @@ struct ProfileView: View {
                     }
                 }
 
-                HStack(spacing: 5) {
+                VStack(spacing: 5) {
                     if let d = p.discipline, !d.isEmpty {
                         chip(d, systemImage: "figure.martial.arts")
                     }
@@ -90,9 +82,9 @@ struct ProfileView: View {
                         .padding(.horizontal)
                 }
 
-                // Se conectan cuando existan posts y amigos.
+                // Estadísticas
                 HStack {
-                    stat("Posts", value: postCount)
+                    stat("Posts", value: viewModel.posts.count)
                     Divider().frame(height: 32)
                     stat("Amigos", value: 0)
                 }
@@ -100,13 +92,38 @@ struct ProfileView: View {
                 .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal)
 
+                // Publicaciones
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Publicaciones")
+                        .font(.title3.bold())
+
+                    if viewModel.posts.isEmpty {
+                        ContentUnavailableView(
+                            "Sin publicaciones",
+                            systemImage: "square.and.pencil",
+                            description: Text("Toca + para compartir tu primera técnica o entrenamiento.")
+                        )
+                    } else {
+                        LazyVStack(spacing: 12) {
+                            ForEach(viewModel.posts) { post in
+                                PostCardView(post: post)
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal)
+
                 Button("Cerrar sesión", role: .destructive) { auth.signOut() }
                     .padding(.top, 8)
             }
             .padding(.vertical)
         }
+        .refreshable {
+            await viewModel.load()
+            await viewModel.loadPosts()
+        }
     }
-    
+
     private func avatar(_ urlString: String?) -> some View {
         Group {
             if let urlString, let url = URL(string: urlString) {

@@ -41,4 +41,15 @@ final class PostService {
             .execute()
             .count ?? 0
     }
+    
+    func fetchPosts(of uid: UUID) async throws -> [Post] {
+        try await supabase
+            .from("posts")
+            .select()
+            .eq("author_id", value: uid)
+            .order("date", ascending: false)        // más recientes primero
+            .order("created_at", ascending: false)  // desempate si tienen la misma fecha
+            .execute()
+            .value
+    }
 }

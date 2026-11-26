@@ -9,6 +9,7 @@ final class ProfileViewModel {
     var isLoading = false
     var isSaving = false
     var errorMessage: String?
+    var posts: [Post] = []
 
     private var uid: UUID? { supabase.auth.currentUser?.id }
 
@@ -19,6 +20,15 @@ final class ProfileViewModel {
         do {
             profile = try await ProfileService.shared.fetchProfile(uid: uid)
             if profile == nil { errorMessage = "No se encontró tu perfil" }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+    
+    func loadPosts() async {
+        guard let uid else { return }
+        do {
+            posts = try await PostService.shared.fetchPosts(of: uid)
         } catch {
             errorMessage = error.localizedDescription
         }
